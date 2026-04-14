@@ -5,23 +5,15 @@ from etl import run_pipeline # Import your ETL function
 from apscheduler.schedulers.background import BackgroundScheduler
 from contextlib import asynccontextmanager
 
-# 1. Setup the Scheduler
 scheduler = BackgroundScheduler()
-# This adds a job to run every 24 hours
 scheduler.add_job(run_pipeline, 'interval', hours=24)
 
-# 2. Manage the Lifecycle
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # This runs when the API starts
-    print("⏰ Scheduler starting...")
     scheduler.start()
     yield
-    # This runs when the API stops
-    print("⏰ Scheduler shutting down...")
     scheduler.shutdown()
 
-# 3. Initialize FastAPI with the lifespan manager
 app = FastAPI(
     title="Job Market Pulse API",
     description="Live job market insights for Chennai, India.",
@@ -36,7 +28,6 @@ def home():
 @app.get("/jobs/latest")
 def get_latest_jobs(limit: int = 10):
     with engine.connect() as conn:
-        # NEW: Added redirect_url to the SQL SELECT
         query = text(f"SELECT title, company, location, tech_stack, redirect_url FROM jobs LIMIT {limit}")
         result = conn.execute(query)
         jobs = [dict(row._mapping) for row in result]
